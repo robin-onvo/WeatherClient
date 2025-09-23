@@ -96,8 +96,6 @@ void Cities_AddFromStringList(Cities* _Cities, const char* _StringList)
 		ptr++;
 
 	} while (*(ptr) != '\0');
-	
-	printf("Finished parsing City list\n");
 
 	free(list_copy);
 }

@@ -13,6 +13,8 @@ typedef struct City
 	float latitude;
 	float longitude;
 
+	json_t* data;
+
 } City;
 
 

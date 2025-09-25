@@ -21,6 +21,8 @@ int main()
 		return -1;
 	}
 
+	//Cities_Create(cities, "Kalmar", "59.3293", "18.0686", NULL);
+
 	
 	int doStop = 0;
 	while(doStop == 0)

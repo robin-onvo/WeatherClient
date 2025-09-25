@@ -35,6 +35,13 @@ int Cities_Init(Cities** _CitiesPtr)
 
 	LinkedList_Initialize(&_Cities->list);
 
+	create_folder("cities");
+
+	//Läsa alla filer som finns i cities mappen
+
+	Cities_AddFromStringList(_Cities, Cities_list);
+
+	
 	Cities_AddFromStringList(_Cities, Cities_list);
 
 	*(_CitiesPtr) = _Cities;
@@ -105,6 +112,16 @@ int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, con
 	if(_Cities == NULL || _Name == NULL)
 		return -1;
 
+	if(Cities_GetName(_Cities, _Name, NULL) == 0)
+	{
+		printf("City with name '%s' already exists!\n", _Name);
+
+		if(_City != NULL)
+			*(_City) = new_City;
+
+		return 1;
+	}
+
 	int result = 0;
 	City* new_City = NULL;
 
@@ -112,7 +129,7 @@ int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, con
 	if(result != 0)
 	{
 		printf("Failed to initialize City struct! Errorcode: %i\n", result);
-		return -2;
+		return -3;
 	}
 	
 	LinkedList_Push(&_Cities->list, new_City);
@@ -125,7 +142,7 @@ int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, con
 
 int Cities_GetName(Cities* _Cities, const char* _Name, City** _CityPtr)
 {
-	if(_Cities == NULL || _Name == NULL || _CityPtr == NULL)
+	if(_Cities == NULL || _Name == NULL)
 		return -1;
 
 	City* city = NULL;

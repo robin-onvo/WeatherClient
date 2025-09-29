@@ -107,35 +107,35 @@ void Cities_AddFromStringList(Cities* _Cities, const char* _StringList)
 	free(list_copy);
 }
 
-int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, const char* _Longitude, City** _City)
+int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, const char* _Longitude, City** _CityPtr)
 {
 	if(_Cities == NULL || _Name == NULL)
 		return -1;
 
-	if(Cities_GetName(_Cities, _Name, NULL) == 0)
+	City* _City = NULL;
+	if(Cities_GetName(_Cities, _Name, &_City) == 0)
 	{
 		printf("City with name '%s' already exists!\n", _Name);
 
-		if(_City != NULL)
-			*(_City) = new_City;
+		if(_CityPtr != NULL)
+			*(_CityPtr) = _City;
 
 		return 1;
 	}
 
 	int result = 0;
-	City* new_City = NULL;
 
-	result = City_Init(_Name, _Latitude, _Longitude, &new_City);
+	result = City_Init(_Name, _Latitude, _Longitude, &_City);
 	if(result != 0)
 	{
 		printf("Failed to initialize City struct! Errorcode: %i\n", result);
 		return -3;
 	}
 	
-	LinkedList_Push(&_Cities->list, new_City);
+	LinkedList_Push(&_Cities->list, _City);
 	
-	if(_City != NULL)
-		*(_City) = new_City;
+	if(_CityPtr != NULL)
+		*(_CityPtr) = _City;
 
 	return 0;
 }

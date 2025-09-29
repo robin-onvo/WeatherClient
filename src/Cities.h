@@ -20,7 +20,8 @@ int Cities_Init(Cities** _CitiesPtr);
 
 
 void Cities_AddFromStringList(Cities* _Cities, const char* _StringList);
-int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, const char* _Longitude, City** _City);
+
+int Cities_Create(Cities* _Cities, const char* _Name, const char* _Latitude, const char* _Longitude, City** _CityPtr);
 int Cities_GetName(Cities* _Cities, const char* _Name, City** _CityPtr);
 int Cities_GetIndex(Cities* _Cities, int _Index, City** _CityPtr);
 void Cities_Destroy(Cities* _Cities, City** _CityPtr);

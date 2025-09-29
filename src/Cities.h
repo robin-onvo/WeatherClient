@@ -24,6 +24,7 @@ void Cities_Load(Cities* _Cities);
 int Cities_LoadCity(Cities* _Cities, const char* _Path, City** _CityPtr);
 void Cities_AddFromStringList(Cities* _Cities, const char* _StringList);
 
+//_Path is optional, can be NULL. _Name, _Latitude and _Longitude are required if _Path is NULL.
 int Cities_Create(Cities* _Cities, const char* _Name, float _Latitude, float _Longitude, City** _CityPtr);
 int Cities_GetName(Cities* _Cities, const char* _Name, City** _CityPtr);
 int Cities_GetIndex(Cities* _Cities, int _Index, City** _CityPtr);

@@ -37,7 +37,7 @@ static inline Input_Command Input_SelectCity(Cities* _Cities, City** _CityPtr)
 				return Input_Command_Invalid;
 						
 			City* city = NULL;
-			int result = Cities_GetIndex(_Cities, index, &city);
+			int result = Cities_GetIndex(_Cities, index - 1, &city);
 			if(result != 0)
 				return Input_Command_Invalid;
 			

@@ -10,6 +10,8 @@
 
 //--------------Internal functions----------------
 
+char* City_GeneratePath(City* _City);
+int City_Load(City* _City);
 int City_Save(City* _City);
 json_t* City_GetWeatherData(City* _City);
 
@@ -24,7 +26,7 @@ int City_Init(const char* _Name, float _Latitude, float _Longitude, City** _City
 	if(_City == NULL)
 	{
 		printf("Failed to allocate memory for new City\n");
-		return -1;
+		return -2;
 	}
 
 	memset(_City, 0, sizeof(City));
@@ -34,16 +36,56 @@ int City_Init(const char* _Name, float _Latitude, float _Longitude, City** _City
 	{
 		printf("Failed to allocate memory for City name\n");
 		free(_City);
-		return -1;
+		return -3;
 	}
 
 	_City->latitude = _Latitude;
 	_City->longitude = _Longitude;
+	
 
+	_City->path = City_GeneratePath(_City);
 	_City->data = NULL;
-	City_Save(_City);
+
+	if(City_Load(_City) != 0)
+	{
+		City_Save(_City);
+	} else {
+		printf("Loaded city data from %s\n", _City->path);
+	}
 
 	*(_CityPtr) = _City;
+
+	return 0;
+}
+
+char* City_GeneratePath(City* _City)
+{
+	if(_City == NULL || _City->name == NULL)
+		return NULL;
+
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer),
+		"%s_%.4f_%.4f",
+		_City->name,
+		_City->latitude,
+		_City->longitude);
+
+
+	const char* hash = MD5_HashToString(buffer, strlen(buffer));
+
+	printf("Unique city name(%s): %s\n", hash, buffer);
+
+	snprintf(buffer, sizeof(buffer), "%s/%s.json", CITIES_PATH, hash);
+	return strdup(buffer);
+}
+
+int City_Load(City* _City)
+{
+	json_t* json = json_load_file(_City->path, 0, NULL);
+	if(json == NULL)
+		return -1;
+	
+	_City->data = json;
 
 	return 0;
 }
@@ -61,23 +103,16 @@ int City_Save(City* _City)
 			"longitude", _City->longitude
 		);
 	}
-
-	char buffer[256];
-	snprintf(buffer, sizeof(buffer),
-		"%s_%.4f_%.4f",
-		_City->name,
-		_City->latitude,
-		_City->longitude);
-
-
-	const char* hash = MD5_HashToString(buffer, strlen(buffer));
-
-	printf("Unique city name(%s): %s\n", hash, buffer);
-
-	snprintf(buffer, sizeof(buffer), "%s/%s.json", CITIES_PATH, hash);
+	else
+	{
+		//These fields should never be changed, but just to be sure...
+		json_object_set_new(_City->data, "name", json_string(_City->name));
+		json_object_set_new(_City->data, "latitude", json_real(_City->latitude));
+		json_object_set_new(_City->data, "longitude", json_real(_City->longitude));
+	}
 	
-	printf("Saving city data to %s\n", buffer);
-	json_dump_file(_City->data, buffer, JSON_INDENT(4));
+	printf("Saving city data to %s\n", _City->path);
+	json_dump_file(_City->data, _City->path, JSON_INDENT(4));
 
 	return 0;
 }
@@ -87,7 +122,36 @@ int City_GetValue(City* _City, const char* _Name, float* _Value, char _Unit[16])
 	if(_City == NULL || _Name == NULL || _Value == NULL)
 		return -1;
 
-	json_t* weather = City_GetWeatherData(_City);
+	json_t* weather = NULL;
+	json_t* cache = json_object_get(_City->data, "cache");
+	if(cache != NULL)
+	{
+		json_t* current = json_object_get(cache, "current");
+		if(current != NULL)
+		{
+			const char* cache_time = json_string_value(json_object_get(current, "time"));
+			if(cache_time != NULL)
+			{
+				int interval = json_integer_value(json_object_get(current, "interval"));
+				if(interval < 900)
+					interval = 900; // Minimum 15 minutes cache
+
+				time_t now = time(NULL);
+				time_t cacheTime = parse_iso_utc_datetime(cache_time);
+				time_t nextUpdate = cacheTime + interval;
+				
+				if(now < nextUpdate)
+				{
+					weather = json_incref(cache);
+					printf("Using cached weather data for City %s\n", _City->name);
+				}
+			}
+		}
+	}
+
+	if(weather == NULL)
+		weather = City_GetWeatherData(_City);
+
 	if(weather == NULL)
 	{
 		printf("Failed to get weather data for City %s (Errorcode: %i)\n", _City->name, errno);
@@ -130,7 +194,12 @@ int City_GetValue(City* _City, const char* _Name, float* _Value, char _Unit[16])
 
 	const char* unit_str = json_string_value(json_unit);
 	snprintf(_Unit, 16, "%s", unit_str == NULL ? "" : unit_str);
+
+
+	json_object_set_new(_City->data, "cache", json_deep_copy(weather));
 	
+
+	City_Save(_City);
 
 	json_decref(weather);
 	return 0;
@@ -174,8 +243,17 @@ void City_Dispose(City** _CityPtr)
 
 	City* _City = *(_CityPtr);
 
+	if(_City->data != NULL)
+	{
+		json_decref(_City->data);
+		_City->data = NULL;
+	}
+
 	if(_City->name != NULL)
 		free(_City->name);
+
+	if(_City->path != NULL)
+		free(_City->path);
 
 	free(_City);
 	*(_CityPtr) = NULL;

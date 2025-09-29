@@ -7,6 +7,8 @@
 
 typedef struct City City;
 
+#include "Cities.h"	
+
 typedef struct City
 {
 	char* name;
@@ -18,7 +20,7 @@ typedef struct City
 } City;
 
 
-int City_Init(const char* _Name, const char* _Latitude, const char* _Longitude, City** _CityPtr);
+int City_Init(const char* _Name, float _Latitude, float _Longitude, City** _CityPtr);
 
 int City_GetValue(City* _City, const char* _Name, float* _Value, char _Unit[16]);
 

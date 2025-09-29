@@ -6,6 +6,7 @@
 
 #include "utils/utils.h"
 #include "utils/HTTPClient.h"
+#include "utils/md5.h"
 
 //--------------Internal functions----------------
 
@@ -14,8 +15,7 @@ json_t* City_GetWeatherData(City* _City);
 
 //------------------------------------------------
 
-
-int City_Init(const char* _Name, const char* _Latitude, const char* _Longitude, City** _CityPtr)
+int City_Init(const char* _Name, float _Latitude, float _Longitude, City** _CityPtr)
 {
 	if(_Name == NULL || _CityPtr == NULL)
 		return -1;
@@ -37,16 +37,8 @@ int City_Init(const char* _Name, const char* _Latitude, const char* _Longitude, 
 		return -1;
 	}
 
-	if(_Latitude != NULL)
-		_City->latitude = atof(_Latitude);
-	else
-		_City->latitude = 0.0f;
-	
-	if(_Longitude != NULL)
-		_City->longitude = atof(_Longitude);
-	else
-		_City->longitude = 0.0f;
-
+	_City->latitude = _Latitude;
+	_City->longitude = _Longitude;
 
 	_City->data = NULL;
 	City_Save(_City);
@@ -68,21 +60,25 @@ int City_Save(City* _City)
 			"latitude", _City->latitude,
 			"longitude", _City->longitude
 		);
-
-		
 	}
 
-	char filepath[256];
-	snprintf(filepath, sizeof(filepath),
-		"cities/%s_lat%.2f_lon%.2f.json",
+	char buffer[256];
+	snprintf(buffer, sizeof(buffer),
+		"%s_%.4f_%.4f",
 		_City->name,
 		_City->latitude,
 		_City->longitude);
 
-	printf("Saving city data to %s\n", filepath);
-	json_dump_file(_City->data, filepath, JSON_INDENT(4));
 
+	const char* hash = MD5_HashToString(buffer, strlen(buffer));
+
+	printf("Unique city name(%s): %s\n", hash, buffer);
+
+	snprintf(buffer, sizeof(buffer), "%s/%s.json", CITIES_PATH, hash);
 	
+	printf("Saving city data to %s\n", buffer);
+	json_dump_file(_City->data, buffer, JSON_INDENT(4));
+
 	return 0;
 }
 
